@@ -2,6 +2,7 @@ from flask import current_app as app,jsonify,request
 from flask_security import auth_required, roles_required, current_user, roles_accepted,hash_password
 from .dbase import db
 from datetime import datetime
+from .models import *
 
 @app.route('/',methods=['GET'])
 def home():
@@ -26,6 +27,46 @@ def user_dashboard():
         'name':user.full_name
     })
 
+
+@app.route('/api/view_scores/<int:quiz_id>',methods=['POST'])
+@auth_required('token')
+@roles_accepted('admin','user')
+def view_scores(quiz_id):
+    if "user" in current_user.roles:
+        user_id=current_user.id
+        quiz=Quiz.query.get(quiz_id)
+        score=0
+        status='FAIL'
+        answers=request.get_json()
+        #some logic to increment score if users answers match with the correct answers set by admin
+
+        if score>=quiz.qualifying_marks:
+            status='PASS'
+        
+        #add the details to the scores table of the database.get timestamp of event from client!
+
+        return {
+            "score":score,
+            "status":status
+        }
+    
+    if "admin" in current_user.roles:
+        quiz=Quiz.query.get(quiz_id)
+        scores=Scores.query.filter_by(quiz_id=quiz_id).all()
+        average=0
+        sum=0
+        n=0
+        for score in scores:
+            sum+=score.total_scored
+            n+=1
+        average=(sum/n)
+
+        return {
+            "Quiz_id":quiz_id,
+            "Scores":scores,
+            "Average":average
+        }
+        #enhance some more things after setting up UI to correspond to that!
 
 @app.route('/api/register',methods=['POST'])
 def register_user():
