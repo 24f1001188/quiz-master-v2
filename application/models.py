@@ -73,4 +73,4 @@ class Scores(db.Model):
     user_id=db.Column(db.Integer,db.ForeignKey('user.id',ondelete='CASCADE'),nullable=False)
     time_stamp_of_event=db.Column(db.DateTime,nullable=False)
     total_scored=db.Column(db.Integer,nullable=False)
-    is_passed=db.Column(db.Boolean)
+    is_passed=db.Column(db.Boolean,nullable=False)
