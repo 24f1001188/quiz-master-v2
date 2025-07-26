@@ -1,12 +1,14 @@
-from flask import current_app as app,jsonify,request
-from flask_security import auth_required, roles_required, current_user, roles_accepted,hash_password
+from flask import current_app as app,jsonify,request,render_template
+from flask_security import auth_required, roles_required, current_user, roles_accepted,login_user
 from .dbase import db
-from datetime import datetime
+from datetime import datetime,date
 from .models import *
+from werkzeug.security import check_password_hash,generate_password_hash
+
 
 @app.route('/',methods=['GET'])
 def home():
-    return "<h1> Welcome to Quiz Master!</h1>"
+    return render_template("index.html")
 
 @app.route('/api/admin')
 @auth_required('token')
@@ -15,42 +17,160 @@ def admin_dashboard():
 
     return jsonify({
         'message':'Login successful'
-    })
+    }),200
 
 @app.route('/api/user')
 @auth_required('token')
 @roles_accepted('admin','user')
 def user_dashboard():
     user=current_user
-    return jsonify({
-        'username':user.email,
-        'name':user.full_name
-    })
+    if(user):
+        return jsonify({
+            'username':user.email,
+            'name':user.full_name,
+            'id':user.id,
+            'message':"Login Succesful"
+        }),200
+    else:
+        return jsonify({
+            "message":"You need to sign to view this endpoint"
+        }),403
 
-
-@app.route('/api/view_scores/<int:quiz_id>',methods=['POST'])
+@app.route('/api/view_quiz/<int:quiz_id>')
 @auth_required('token')
 @roles_accepted('admin','user')
-def view_scores(quiz_id):
+def view_quiz(quiz_id):
+    quiz = Quiz.query.get(quiz_id)
+    chapter=quiz.chapter
+    subject=chapter.subject   
+
+    this_quiz={}
+    this_quiz["id"]=quiz.id
+    this_quiz["subject"]=subject.name
+    this_quiz["chapter"]=chapter.name
+    this_quiz["total_marks"]=quiz.total_marks
+    this_quiz["qualifying_marks"]=quiz.qualifying_marks
+    this_quiz["date"]=quiz.date_of_quiz.strftime("%Y-%m-%d")
+    this_quiz["duration"]=quiz.time_duration.strftime("%H:%M")
+    
+    return jsonify(this_quiz),200
+
+@app.route('/api/user_summary')
+@auth_required('token')
+@roles_accepted('user')
+def user_summary():
+    user=current_user
+    scores=Scores.query.filter_by(user_id=user.id).order_by(Scores.time_stamp_of_event)
+    month_n={}
+    months=[]
+    monthwise_n=[]
+    subject_n={}
+    subjects=[]
+    subjectwise_n=[]
+    n=0
+    for score in scores:
+        month=score.quiz.date_of_quiz.month
+        if month in month_n:
+            month_n[month]+=1
+        else:
+            month_n[month]=1
+
+        subject=score.quiz.chapter.subject.name
+        if subject in subject_n:
+            subject_n[subject]+=1
+        else:
+            subject_n[subject]=1
+
+    for month in sorted(month_n):
+        months.append(month)
+        monthwise_n.append(month_n[month])
+    for sub in subject_n:
+        subjects.append(sub)
+        subjectwise_n.append(subject_n[sub])
+
+    return jsonify({
+        "months":months,
+        "month_n":monthwise_n,
+        "subjects":subjects,
+        "subject_n":subjectwise_n
+    }),200
+
+
+
+    
+
+    
+    
+@app.route('/api/attempts',methods=['GET'])
+@auth_required('token')
+@roles_accepted('user')
+def attempts():
+    user=current_user
+    scores=Scores.query.filter_by(user_id=user.id).order_by(Scores.time_stamp_of_event.desc())
+    scores_json=[]
+    
+    for score in scores:
+        this_score={}
+        this_score["id"]=score.id
+        this_score["date"]=score.time_stamp_of_event.date().strftime('%Y-%m-%d')
+        this_score["time_attempted"]=score.time_stamp_of_event.time().strftime('%H:%M:%S')
+        this_score["num_questions"]=score.quiz.total_marks
+        this_score["score"]=score.total_scored
+        this_score["qid"]=score.quiz.id
+        if(score.is_passed):
+            this_score["status"]="PASS"
+        else:
+            this_score["status"]="FAIL"
+        scores_json.append(this_score)
+    if (scores_json):
+        return jsonify(scores_json),200
+    else:
+        return jsonify({
+            "message":"No Attempts of Quiz found!"
+        }),200
+
+
+
+
+
+
+@app.route('/api/get_score/<int:quiz_id>',methods=['POST'])
+@auth_required('token')
+@roles_accepted('user')
+def get_score(quiz_id):
     if "user" in current_user.roles:
         user_id=current_user.id
         quiz=Quiz.query.get(quiz_id)
         score=0
         status='FAIL'
-        answers=request.get_json()
-        #some logic to increment score if users answers match with the correct answers set by admin
-
+        body=request.get_json()
+        print(body)
+        for question in quiz.questions:
+            qid=str(question.id)
+            ans=question.answer_option_no
+            print(f"Checking Q{qid}: correct={ans}, user_answer={body.get(qid)}")
+            if qid in body:
+                if body[qid]==ans:
+                    score+=1
         if score>=quiz.qualifying_marks:
             status='PASS'
-        
-        #add the details to the scores table of the database.get timestamp of event from client!
+        time_str=body['time_stamp']
+        time_stamp=datetime.fromisoformat(time_str.replace('Z', ''))
 
-        return {
+        is_passed=False
+        if(status=='PASS'):
+            is_passed=True
+        score_db=Scores(quiz_id=quiz_id,user_id=user_id,time_stamp_of_event=time_stamp,
+                     is_passed=is_passed,total_scored=score)
+        db.session.add(score_db)
+        db.session.commit()
+        return jsonify({
             "score":score,
-            "status":status
-        }
+            "status":status,
+            "total":quiz.total_marks
+        }),200
     
-    if "admin" in current_user.roles:
+    '''if "admin" in current_user.roles:
         quiz=Quiz.query.get(quiz_id)
         scores=Scores.query.filter_by(quiz_id=quiz_id).all()
         average=0
@@ -66,7 +186,53 @@ def view_scores(quiz_id):
             "Scores":scores,
             "Average":average
         }
-        #enhance some more things after setting up UI to correspond to that!
+        #enhance some more things after setting up UI to correspond to that!'''
+    #above is for quiz wise summary of users to be seen by the admin
+
+@app.route('/api/login',methods=['POST'])
+def login():
+    body=request.get_json()
+    email=body['email']
+    password=body['password']
+
+    if not email:
+        return jsonify({
+            "message":"E-mail is not provided!"
+        }),400
+    
+    if not password:
+        return jsonify({
+            "message":"Password is not provided!"
+        }),400
+    
+    user=app.security.datastore.find_user(email=email)
+
+    if user:
+        if check_password_hash(user.password,password):
+            login_user(user)
+            return jsonify({
+                "id":user.id,
+                "Name":user.full_name,
+                "token":user.get_auth_token(),
+                "message":"Login successful"
+            })
+        else:
+            return jsonify({
+                "message":"Password is incorrect!"
+            }),400
+    
+    else:
+        return jsonify({
+        "message":"User does not exist!"
+    }),404
+
+
+
+
+
+
+
+
 
 @app.route('/api/register',methods=['POST'])
 def register_user():
@@ -91,7 +257,7 @@ def register_user():
     if "email" in details.keys() and details["email"] is not None:
         if not app.security.datastore.find_user(email=details['email']):
             try:
-                app.security.datastore.create_user(email=details['email'],password=hash_password(details['password']),
+                app.security.datastore.create_user(email=details['email'],password=generate_password_hash(details['password']),
                                                 full_name=details['full_name'],qualification=details.get('qualification'),
                                                 dob=parsed_dob,
                                                 roles=['user'])

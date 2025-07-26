@@ -1,7 +1,7 @@
 from flask_restful import Api,Resource,reqparse
 from .models import *
 from flask_security import auth_required, roles_required, current_user, roles_accepted
-from datetime import datetime
+from datetime import datetime,date
 
 api=Api()
 
@@ -9,7 +9,7 @@ def parse_date(value):
     return datetime.strptime(value, '%Y-%m-%d').date()
 
 def parse_time(value):
-   return datetime.strptime(value, "%H:%M:%S").time()
+   return datetime.strptime(value, "%H:%M").time()
 
 sub_parser=reqparse.RequestParser()
 sub_parser.add_argument('name',required=True,help="Name of the subject is mandatory!")
@@ -21,7 +21,7 @@ chap_parser.add_argument('description',required=True,help="Description of the ch
 
 quiz_parser=reqparse.RequestParser()
 quiz_parser.add_argument('date_of_quiz',required=True,type=parse_date,help="Date is mandatory and must be valid and in YYYY-MM-DD format!")
-quiz_parser.add_argument('time_duration',required=True,type=parse_time,help="Time duration is mandatory and must be valid and in HH:MM:SS format (24-hour clock)!")
+quiz_parser.add_argument('time_duration',required=True,type=parse_time,help="Time duration is mandatory and must be valid and in HH:MM format)!")
 quiz_parser.add_argument('total_marks',required=True,type=int,help="Total marks is mandatory!")
 quiz_parser.add_argument('qualifying_marks',required=True,type=int,help="Qualifying marks is mandatory!")
 quiz_parser.add_argument('remarks')
@@ -201,28 +201,34 @@ class ChapterApi(Resource):
 class QuizApi(Resource):
     @auth_required('token')
     @roles_accepted('user','admin')
-    def get(self,chap_id):
-        quizzes=Quiz.query.filter_by(chapter_id=chap_id).all()
-        quizzes_json=[]
+    def get(self):
+        today=date.today()
+        up_quizzes = Quiz.query.filter(Quiz.date_of_quiz >= today).order_by(Quiz.date_of_quiz).all()
+        n=1
+        upcoming_quizzes=[]
+        if(up_quizzes):
+            for quiz in up_quizzes:
+                this_quiz={}
+                this_quiz["no"]=n
+                this_quiz["id"]=quiz.id
+                this_quiz["total_marks"]=quiz.total_marks
+                this_quiz["date"]=quiz.date_of_quiz.strftime("%Y-%m-%d")
+                this_quiz["duration"]=quiz.time_duration.strftime("%H:%M")
+                this_quiz["remarks"]=quiz.remarks
+                if(quiz.date_of_quiz==today):
+                    this_quiz["is_today"]=1
+                else:
+                    this_quiz["is_today"]=0
+                n+=1
+                upcoming_quizzes.append(this_quiz)
 
-        for quiz in quizzes:
-            this_quiz={}
-
-            this_quiz["id"]=quiz.id
-            this_quiz["date_of_quiz"]=quiz.date_of_quiz.strftime('%Y-%m-%d')
-            this_quiz["time_duration"]=quiz.time_duration.strftime('%H:%M:%S')
-            this_quiz["total_marks"]=quiz.total_marks
-            this_quiz["qualifying_marks"]=quiz.qualifying_marks
-            this_quiz["remarks"]=quiz.remarks
-
-            quizzes_json.append(this_quiz)
+            return upcoming_quizzes
+        else:
+            return {
+                "message":"No Upcoming Quizzes"
+            }
+    
         
-        if quizzes_json:
-            return quizzes_json
-        
-        return {
-            "message":"No quizzes are added to this chapter!"
-        },404
         
     @auth_required('token')
     @roles_required('admin')
@@ -431,7 +437,7 @@ api.add_resource(ChapterApi,'/api/get_chap/<int:sub_id>',
                             '/api/update_chap/<int:chap_id>',
                             '/api/delete_chap/<int:chap_id>')
 
-api.add_resource(QuizApi,'/api/get_quiz/<int:chap_id>',
+api.add_resource(QuizApi,'/api/get_quiz',
                             '/api/add_quiz/<int:chap_id>',
                             '/api/update_quiz/<int:quiz_id>',
                             '/api/delete_quiz/<int:quiz_id>')
