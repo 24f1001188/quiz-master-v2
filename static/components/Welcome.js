@@ -6,7 +6,7 @@ export default {
       
       <!-- HERO SECTION -->
 <div class="container-fluid bg-light text-center py-5">
-  <h1 class="display-4 fw-bold">Quiz Your Way to Success!</h1>
+  <h1 class="display-4 fw-bold">Quiz Your Way to Success!!</h1>
   <p class="lead">Attempt quizzes of your choice. Track your improvement visually.</p>
   
 </div>
