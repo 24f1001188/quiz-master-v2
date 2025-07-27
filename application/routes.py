@@ -130,6 +130,18 @@ def attempts():
         }),200
 
 
+@app.route('/api/get_duration/<int:quiz_id>',methods=['GET'])
+@auth_required('token')
+@roles_accepted('user')
+def get_duration(quiz_id):
+    quiz=Quiz.query.get(quiz_id)
+    duration=quiz.time_duration
+    h=duration.hour
+    m=duration.minute
+    s=duration.second
+
+    secs=(h*60*60)+(m*60)+s
+    return jsonify({"secs":secs}),200
 
 
 

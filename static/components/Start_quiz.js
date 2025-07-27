@@ -2,8 +2,11 @@ export default{
     template: `
     <div class="d-flex justify-content-center align-items-center vh-200">
     <div class="card shadow-lg p-4" style="width: 700px; height: 400px;">
-  <div class="container mt-4" v-if="quiz.length">
     
+  <div class="container mt-4" v-if="quiz.length">
+    <div class="text-end text-danger fw-bold mb-2">
+      <i class="bi bi-clock-fill me-1"></i> {{ DisplayTime }}
+    </div>
     <!-- Progress -->
     <div class="text-end text-muted mb-2">
       Question {{ currentIndex + 1 }} / {{ quiz.length }}
@@ -62,9 +65,19 @@ export default{
             total:0,
             status:"",
             user_response:{},
-            currentIndex:0
+            currentIndex:0,
+            time_left:0,
+            timer:null
         }
     },
+    computed: {
+    DisplayTime() {
+      const hours = Math.floor(this.time_left / 3600);
+      const minutes = Math.floor((this.time_left % 3600) / 60);
+      const seconds = this.time_left % 60;
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+},
     mounted(){
     fetch(`/api/get_question/${this.quiz_id}`,{
         method:'GET',
@@ -75,9 +88,41 @@ export default{
     }
     )
     .then(response=>response.json())
-    .then(data=>this.quiz=data)},
+    .then(data=>{
+      this.quiz=data
+      fetch(`/api/get_duration/${this.quiz_id}`,{
+        method:'GET',
+        headers:{
+            "Content-Type":"application/json",
+            "Token-for-Authentication":localStorage.getItem("auth_token")
+        }
+    }
+    )
+    .then(response=>response.json())
+    .then(data=>{
+      if(this.quiz.length > 0){
+      this.time_left=data.secs
+      this.timer = setInterval(() => {
+      if (this.time_left > 0) {
+        this.time_left--;
+      } 
+      else {
+        alert("Time Up!")
+        this.EndQuiz(); 
+      }
+      }, 1000)}
+
+    })
+    })
+    
+
+    
+
+  
+  },
     methods:{
     EndQuiz:function(){
+        clearInterval(this.timer);
         const res_body = {
         ...this.user_response,
         time_stamp: new Date().toISOString()

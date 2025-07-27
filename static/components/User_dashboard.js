@@ -4,17 +4,17 @@ export default {
     <h2>Welcome {{UserData.name}}!!</h2>
     <div class="row border">
       <div class=" col border" style="width:1000px;height: 750px;">
-          <h2 class="mt-4 mb-4 text-center text-primary">Upcoming Quizzes</h2>
+          <h2 class="mt-4 mb-4 text-center ">Upcoming Quizzes</h2>
           <div>
             <table class="table">
-              <thead class="table-dark">
-                <tr class="text-center">
-                  <th>S.No</th>
+              <thead class="table-info">
+                <tr class="text-center ">
+                  <th class="col border">S.No</th>
                   <th>Date</th>
                   <th>Duration(hh:mm)</th>
                   <th>Total Marks</th>
                   <th>Remarks</th>
-                  <th>Action</th>
+                  <th class="col border">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -22,12 +22,12 @@ export default {
                   <td colspan="6" class="text-center text-muted">{{message}}</td>
                 </tr>
                 <tr v-else v-for="q in Quizzes" class="text-center" >
-                  <td>{{ q.no }}</td>
+                  <td class="col border">{{ q.no }}</td>
                   <td>{{ q.date }}</td>
                   <td>{{ q.duration }}</td>
                   <td>{{ q.total_marks }}</td>
                   <td>{{ q.remarks || 'No remarks' }}</td>
-                  <td>
+                  <td class="col border">
                     <button class="btn  btn-outline-primary" @click="View(q.id)">View</button>
                     <button v-if="q.is_today==1"class="btn btn-success" @click="Start(q.id)">Start</button>
                   </td>
