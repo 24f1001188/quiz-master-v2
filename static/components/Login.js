@@ -28,7 +28,8 @@ export default {
         email:"",
         password:""
         },
-        message:""
+        message:"",
+        role:""
     }
     },
   methods:{
@@ -48,7 +49,12 @@ export default {
                 localStorage.setItem("auth_token",data.token)
                 localStorage.setItem("id",data.id)
                 localStorage.setItem("name",data.Name)
-                this.$router.push('/User_Dashboard')
+                if(data.role=="admin"){
+                  this.$router.push('/admin_dashboard')
+                }
+                if(data.role=="user"){
+                  this.$router.push('/User_Dashboard')
+                }
                 }
                 else{
                 this.message=data.message}

@@ -5,6 +5,20 @@ from datetime import datetime,date
 
 api=Api()
 
+def get_chapters(sub_id):
+    chapters = Chapter.query.filter_by(subject_id=sub_id).all()
+    chapter_list = []
+    for i, c in enumerate(chapters, start=1):
+        chapter_list.append({
+            "no": i,
+            "id": c.id,
+            "name": c.name,
+            "description": c.description
+        })
+    return chapter_list
+
+
+
 def parse_date(value):
     return datetime.strptime(value, '%Y-%m-%d').date()
 
@@ -50,6 +64,7 @@ class SubjectApi(Resource):
             this_sub["id"]=subject.id
             this_sub["name"]=subject.name
             this_sub["description"]=subject.description
+            this_sub["chapters"]= get_chapters(subject.id)
 
             subjects_json.append(this_sub)
         
@@ -64,6 +79,13 @@ class SubjectApi(Resource):
     @roles_required('admin')
     def post(self):
         sub_args=sub_parser.parse_args()
+
+        if not sub_args['description'].strip():
+            return {"message": "Description cannot be empty!"}, 400
+    
+        if not sub_args['name'].strip():
+            return {"message": "Name is mandatory!"}, 400
+
 
         subject=Subject(name=sub_args["name"],
                         description=sub_args["description"])
@@ -85,6 +107,12 @@ class SubjectApi(Resource):
 
         if not subject:
             return {"message": "Subject not found!"}, 404
+        
+        if not sub_args['description'].strip():
+            return {"message": "Description cannot be empty!"}, 400
+    
+        if not sub_args['name'].strip():
+            return {"message": "Name is mandatory!"}, 400
 
 
         
@@ -94,7 +122,7 @@ class SubjectApi(Resource):
         db.session.commit()
 
         return {
-            "message":"Subject Updated successfully"
+            "message":"Subject Updated successfully!"
         }
 
         
@@ -126,15 +154,17 @@ class ChapterApi(Resource):
     def get(self,sub_id):
         chapters=Chapter.query.filter_by(subject_id=sub_id).all()
         chapters_json=[]
+        n=1
 
         for chapter in chapters:
             this_chap={}
-
+            this_chap["no"]=n
             this_chap["id"]=chapter.id
             this_chap["name"]=chapter.name
             this_chap["description"]=chapter.description
 
             chapters_json.append(this_chap)
+            n=n+1
         
         if chapters_json:
             return chapters_json
@@ -148,6 +178,11 @@ class ChapterApi(Resource):
     def post(self,sub_id):
         chap_args=chap_parser.parse_args()
 
+        if not chap_args['description'].strip():
+            return {"message": "Description cannot be empty!"}, 400
+    
+        if not chap_args['name'].strip():
+            return {"message": "Name is mandatory!"}, 400
         
         chapter=Chapter(name=chap_args["name"],
                         description=chap_args["description"],
@@ -170,6 +205,12 @@ class ChapterApi(Resource):
         
         if not chapter:
             return {"message": "Chapter not found!"}, 404
+        
+        if not chap_args['description'].strip():
+            return {"message": "Description cannot be empty!"}, 400
+    
+        if not chap_args['name'].strip():
+            return {"message": "Name is mandatory!"}, 400
 
         chapter.name=chap_args["name"]
         chapter.description=chap_args["description"]
@@ -215,14 +256,15 @@ class QuizApi(Resource):
                 this_quiz["date"]=quiz.date_of_quiz.strftime("%Y-%m-%d")
                 this_quiz["duration"]=quiz.time_duration.strftime("%H:%M")
                 this_quiz["remarks"]=quiz.remarks
+                
                 if(quiz.date_of_quiz==today):
                     this_quiz["is_today"]=1
                 else:
                     this_quiz["is_today"]=0
                 n+=1
                 upcoming_quizzes.append(this_quiz)
-
             return upcoming_quizzes
+
         else:
             return {
                 "message":"No Upcoming Quizzes"
@@ -235,8 +277,9 @@ class QuizApi(Resource):
     def post(self,chap_id):
         quiz_args=quiz_parser.parse_args()
 
+
         if quiz_args["total_marks"] < 0 or quiz_args["qualifying_marks"] < 0:
-            return {"message": "Marks cannot be negative"}, 400
+            return {"message": "Both total and qualifying marks are mandatory!"}, 400
 
         if quiz_args["qualifying_marks"] > quiz_args["total_marks"]:
             return {"message": "Qualifying marks cannot exceed total marks"}, 400
@@ -340,6 +383,11 @@ class QuestionApi(Resource):
     def post(self,quiz_id):
         ques_args=ques_parser.parse_args()
 
+        required_fields = ['question_statement', 'option_1', 'option_2', 'option_3', 'option_4', 'answer']
+        for field in required_fields:
+            if not ques_args[field].strip():
+                return {"message": f"{field.replace('_', ' ').capitalize()} cannot be empty!"}, 400
+
         if ques_args["answer_option_no"] <= 0 or ques_args["answer_option_no"] > 4:
             return {"message": "Answer option number must be between 1 to 4"}, 400
         
@@ -360,13 +408,18 @@ class QuestionApi(Resource):
         db.session.commit()
 
         return {
-            "message":"Question added successfully"
+            "message":"Question added successfully!"
         }
         
     @auth_required('token')
     @roles_required('admin')
     def put(self,question_id):
         ques_args=ques_parser.parse_args()
+        required_fields = ['question_statement', 'option_1', 'option_2', 'option_3', 'option_4', 'answer']
+        for field in required_fields:
+            if not ques_args[field].strip():
+                return {"message": f"{field.replace('_', ' ').capitalize()} cannot be empty!"}, 400
+
 
         if ques_args["answer_option_no"] <= 0 or ques_args["answer_option_no"] > 4:
             return {"message": "Answer option number must be between 1 to 4"}, 400
@@ -391,7 +444,7 @@ class QuestionApi(Resource):
         db.session.commit()
 
         return {
-                "message":"Question Updated successfully"
+                "message":"Question Updated successfully!"
             }
 
         

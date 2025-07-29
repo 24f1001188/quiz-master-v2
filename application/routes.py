@@ -222,10 +222,15 @@ def login():
     if user:
         if check_password_hash(user.password,password):
             login_user(user)
+            if "admin" in user.roles:
+                user_role="admin"
+            else:
+                user_role="user"
             return jsonify({
                 "id":user.id,
                 "Name":user.full_name,
                 "token":user.get_auth_token(),
+                "role":user_role,
                 "message":"Login successful"
             })
         else:
@@ -297,3 +302,124 @@ def register_user():
                         "message":"E-mail is mandatory!"
                     }
                 ),400
+    
+@app.route('/api/get_ch/<int:ch_id>',methods=['GET'])
+@auth_required('token')
+@roles_accepted('admin')
+def get_ch(ch_id):
+    chap=Chapter.query.get(ch_id)
+    if(chap):
+        return jsonify({
+            "chapter":{
+            "name":chap.name,
+            "description":chap.description
+        }}),200
+    
+    return jsonify({
+            "message":"Chapter not found!"
+    }),404
+
+@app.route('/api/get_s/<int:s_id>',methods=['GET'])
+@auth_required('token')
+@roles_accepted('admin')
+def get_s(s_id):
+    sub=Subject.query.get(s_id)
+    if(sub):
+        return jsonify({
+        "subject":{
+            "name":sub.name,
+            "description":sub.description
+        }}),200
+    
+    return jsonify({
+            "message":"Subject not found!"
+    }),404
+
+@app.route('/api/get_ques/<int:ques_id>',methods=['GET'])
+@auth_required('token')
+@roles_accepted('admin')
+def get_ques(ques_id):
+    ques=Questions.query.get(ques_id)
+    if(ques):
+        return jsonify({
+        "question":{
+            "question_statement":ques.question_statement,
+            "option_1":ques.option_1,
+            "option_2":ques.option_2,
+            "option_3":ques.option_3,
+            "option_4":ques.option_4,
+            "answer_option_no":ques.answer_option_no,
+            "answer":ques.answer
+        }}),200
+    
+    return jsonify({
+            "message":"Question not found!"
+    }),404
+
+@app.route('/api/get_quizz/<int:quiz_id>',methods=['GET'])
+@auth_required('token')
+@roles_accepted('admin')
+def get_quizz(quiz_id):
+    quiz=Quiz.query.get(quiz_id)
+    if(quiz):
+        return jsonify({
+        "quiz":{
+            "date_of_quiz":quiz.date_of_quiz.strftime("%Y-%m-%d"),
+            "time_duration":quiz.time_duration.strftime("%H:%M"),
+            "total_marks":quiz.total_marks,
+            "qualifying_marks":quiz.qualifying_marks,
+            "remarks":quiz.remarks            
+        }}),200
+    
+    return jsonify({
+            "message":"Quiz not found!"
+    }),404
+
+
+
+
+
+
+def get_questions(quiz_id):
+    questions = Questions.query.filter_by(quiz_id=quiz_id).all()
+    question_list = []
+    for i, q in enumerate(questions, start=1):
+        question_list.append({
+            "no": i,
+            "id": q.id,
+            "q_stmt": q.question_statement,
+            "ans": q.answer,
+            "ans_op_no":q.answer_option_no
+        })
+    return question_list
+
+@app.route('/api/get_quiz/<int:chap_id>',methods=['GET'])
+@auth_required('token')
+@roles_accepted('admin')
+def get_quiz_admin(chap_id):
+        
+        quizzes = Quiz.query.filter_by(chapter_id=chap_id).all()
+        n=1
+        result=[]
+        if(quizzes):
+            for quiz in quizzes:
+                this_quiz={}
+                this_quiz["no"]=n
+                this_quiz["id"]=quiz.id
+                this_quiz["total_marks"]=quiz.total_marks
+                this_quiz["date"]=quiz.date_of_quiz.strftime("%Y-%m-%d")
+                this_quiz["duration"]=quiz.time_duration.strftime("%H:%M")
+                this_quiz["remarks"]=quiz.remarks
+                this_quiz["questions"]=get_questions(quiz.id)
+
+                
+                
+                n+=1
+                result.append(this_quiz)
+            
+            return jsonify(result),200
+        else:
+            return jsonify({
+                "message":"No Quizzes found"
+            }),404
+    

@@ -137,3 +137,65 @@ fetch('/api/view_quiz/<int:quiz_id>',{
                 this.message=data.message}
                 
         })
+
+
+
+
+
+
+
+
+<div class="mx-2">
+    <br>
+    <h2>Welcome ADMIN!!</h2>
+    <div class="row border">
+
+      <div class=" col-8 border" style=" width : 800px ;height: 750px;">
+        <br>
+        <h3 class="text-center">Subjects</h3>
+        <div v-for="q in quizzes" class="card">
+          <div class="card-body">
+          <h4 class="card-title">{{q.chapter}}</h4>
+        </div>
+      </div>
+      </div>
+      <div class=" col-4 border" style="width : 400px ; height: 750px;">
+        <h2>Add Subject section</h2>
+      </div>
+    </div>
+</div>
+  ,
+  
+
+          <div v-if="subjects==null">
+              <h4 class="text-center text-muted">{{s_message}}</h4>
+          </div>
+
+          <div v-else v-for="s in subjects class=text-center">
+            <table class="table">
+              <thead class="table-info">
+                <tr class="text-center ">
+                  <th class="col border">S.No</th>
+                  <th>Chapter ID</th>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th class="col border">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="s.chapters==null">
+                  <td colspan="6" class="text-center text-muted">{{ch_message}}</td>
+                </tr>
+                <tr v-else v-for="c in s.chapters" class="text-center" >
+                  <td class="col border">{{ c.no}}</td>
+                  <td>{{ c.id }}</td>
+                  <td>{{ c.name }}</td>
+                  <td>{{ c.description }}</td>
+                  <td class="col border">
+                    <button class="btn  btn-outline-primary" @click="Edit(c.id)">Edit</button>
+                    <button class="btn btn-danger" @click="Delete(q.id)">Delete</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
