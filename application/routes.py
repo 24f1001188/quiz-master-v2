@@ -5,7 +5,7 @@ from datetime import datetime,date
 from .models import *
 from werkzeug.security import check_password_hash,generate_password_hash
 from celery.result import AsyncResult
-from .tasks import csv_report
+from .tasks import csv_report,monthly_report,daily_reminder
 from .utils import get_user_attempts
 
 
@@ -423,5 +423,15 @@ def export_csv():
 def csv_result(id):
     res=AsyncResult(id)
     return send_from_directory('static',res.result)
+
+@app.route('/api/daily_report')
+def mon_report():
+    result=daily_reminder.delay()
+    return jsonify({
+        "result":result.result
+        })
+
+
+    
 
     

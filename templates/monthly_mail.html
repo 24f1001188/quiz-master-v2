@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Performance for this Month</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <h1 class="text-center mt-2">Quiz Performance Details</h1>
+            <p class="fs-3">Hello {{data['name']}}</p>
+            <p class="fs-5">Please refer to your monthly quiz performance this month</p>
+        </div>
+        <div class="row">
+            <table class="table table-striped mx-2">
+                <thead>
+                    <tr>
+                        <th scope="col">Sr No</th>
+                        <th scope="col">Quiz ID</th>
+                        <th scope="col">Date Of Quiz</th>
+                        <th scope="col">Time Of Attempt</th>
+                        <th scope="col">No. of Questions</th>
+                        <th scope="col">Score</th>
+                        <th scope="col">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                    {% for a in data['user_attempts'] %}
+                    <tr>
+                        <th scope="row">{{loop.index}}</th>
+                        <td>{{a['qid']}}</td>
+                        <td>{{a['date']}}</td>
+                        <td>{{a['time_attempted']}}</td>
+                        <td>{{a['num_questions']}}</td>
+                        <td>{{a['score']}}/{{a['num_questions']}}</td>
+                        <td>{{a['status']}}</td>  
+                        
+                    </tr>
+                    {% endfor %}
+                    
+                </tbody>  
+            </table>
+            <p class="fs-5">
+                Thank you for choosing Quiz Master. 
+                Quiz your Way to Succes!
+            </p>
+        </div>
+        
+        <div class="row">
+            <p class="text-center mt-2">
+                Quiz Master | &copy; Copyright 2025 | Created by Hemalatha
+            </p>
+        </div>
+    </div>
+    
+</body>
+</html>
