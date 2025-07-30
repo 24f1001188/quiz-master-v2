@@ -1,9 +1,12 @@
-from flask import current_app as app,jsonify,request,render_template
+from flask import current_app as app,jsonify,request,render_template,send_from_directory
 from flask_security import auth_required, roles_required, current_user, roles_accepted,login_user
 from .dbase import db
 from datetime import datetime,date
 from .models import *
 from werkzeug.security import check_password_hash,generate_password_hash
+from celery.result import AsyncResult
+from .tasks import csv_report
+from .utils import get_user_attempts
 
 
 @app.route('/',methods=['GET'])
@@ -97,7 +100,6 @@ def user_summary():
 
 
 
-    
 
     
     
@@ -106,22 +108,7 @@ def user_summary():
 @roles_accepted('user')
 def attempts():
     user=current_user
-    scores=Scores.query.filter_by(user_id=user.id).order_by(Scores.time_stamp_of_event.desc())
-    scores_json=[]
-    
-    for score in scores:
-        this_score={}
-        this_score["id"]=score.id
-        this_score["date"]=score.time_stamp_of_event.date().strftime('%Y-%m-%d')
-        this_score["time_attempted"]=score.time_stamp_of_event.time().strftime('%H:%M:%S')
-        this_score["num_questions"]=score.quiz.total_marks
-        this_score["score"]=score.total_scored
-        this_score["qid"]=score.quiz.id
-        if(score.is_passed):
-            this_score["status"]="PASS"
-        else:
-            this_score["status"]="FAIL"
-        scores_json.append(this_score)
+    scores_json=get_user_attempts(user.id)
     if (scores_json):
         return jsonify(scores_json),200
     else:
@@ -422,4 +409,19 @@ def get_quiz_admin(chap_id):
             return jsonify({
                 "message":"No Quizzes found"
             }),404
+
+
+@app.route('/api/export_csv')
+def export_csv():
+    result=csv_report.delay(current_user.id)
+    return jsonify({
+        "id":result.id,
+        "result":result.result
+        })
+
+@app.route('/api/csv_result/<id>')
+def csv_result(id):
+    res=AsyncResult(id)
+    return send_from_directory('static',res.result)
+
     

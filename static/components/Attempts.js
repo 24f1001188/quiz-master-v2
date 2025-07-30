@@ -1,6 +1,11 @@
 export default {
   template: `
 <div class="mx-1"><br>
+    <div class="row mb-3">
+      <div class="text-end">
+        <button class="btn btn-secondary" @click="csvExport"><i class="bi bi-download"></i> CSV report</button>
+      </div>
+    </div>
     <div class="row border">
       <div class=" col border" style="width:1000px;height: 750px;">
           <h2 class="mt-4 mb-4 text-center text-primary">Past Attempts</h2>
@@ -62,5 +67,14 @@ data:function(){
                 this.Scores=data
                 }
         })
+  },
+  methods:{
+    csvExport:function(){
+      fetch('/api/export_csv')
+      .then(response=>response.json())
+      .then(data=>{
+        window.location.href=`/api/csv_result/${data.id}`
+      })
+    }
   }
 }
