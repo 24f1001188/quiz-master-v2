@@ -1,10 +1,10 @@
-# Quiz Master v2 — Online Quiz Management System
+# Quiz Master version 2 — Online Quiz Management System
 
 A full-stack web application for managing and conducting online quizzes, featuring role-based access, quiz scheduling, RESTful APIs, and asynchronous background task processing.
 
 ## Overview
 
-**Quiz Master v2** is a multi-user online examination platform developed to simplify quiz creation, management, and participation. The application provides separate workflows for administrators and regular users, enabling efficient quiz administration and an organized examination experience.
+**Quiz Master version 2** is a multi-user online examination platform developed to simplify quiz creation, management, and participation. The application provides separate workflows for administrators and regular users, enabling efficient quiz administration and an organized examination experience.
 
 Built using Flask, Vue.js, SQLAlchemy, and SQLite, the application follows a client-server architecture in which REST APIs connect the frontend with backend services. Celery is integrated to support asynchronous background tasks.
 
@@ -70,7 +70,7 @@ The project demonstrates practical implementation of full-stack web development 
 
 ## System Architecture
 
-Quiz Master v2 follows a **client-server architecture** with a dedicated frontend, backend API layer, relational database, and asynchronous task-processing component.
+Quiz Master version 2 follows a **client-server architecture** with a dedicated frontend, backend API layer, relational database, and asynchronous task-processing component.
 
 ```text
                  ┌─────────────────────────┐
@@ -169,4 +169,4 @@ Interested in Full-Stack Development, Artificial Intelligence, Machine Learning,
 
 ---
 
-*Quiz Master v2 is a full-stack academic project demonstrating the integration of web technologies, database systems, authentication, REST APIs, and asynchronous task processing.*
+*Quiz Master version 2 is a full-stack academic project demonstrating the integration of web technologies, database systems, authentication, REST APIs, and asynchronous task processing.*
